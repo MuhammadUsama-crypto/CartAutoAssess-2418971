@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Checkout Assessment Tool{% endblock %}</title>
+    {% load static %}
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+</head>
+<body>
+    <div class="blob shape-1"></div>
+    <div class="blob shape-2"></div>
+    
+    <nav class="glass-nav">
+        <div class="nav-container">
+            <h1 class="logo">CartAutoAssess</h1>
+            <div class="nav-links">
+                {% if user.is_authenticated %}
+                    <span class="welcome-text">Welcome, {{ user.username }}!</span>
+                    <a href="{% url 'dashboard' %}" class="nav-link">Dashboard</a>
+                    <form action="{% url 'logout' %}" method="post" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="nav-link btn-logout">Logout</button>
+                    </form>
+                {% else %}
+                    <a href="{% url 'login' %}" class="nav-link">Login</a>
+                    <a href="{% url 'signup' %}" class="btn-primary">Sign Up</a>
+                    <a href="{% url 'guest' %}" class="nav-link">Continue as Guest</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        {% block content %}
+        {% endblock %}
+    </main>
+    
+    {% block scripts %}
+    {% endblock %}
+</body>
+</html>

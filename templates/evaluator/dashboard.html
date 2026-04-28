@@ -1,0 +1,349 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1>Automated Checkout Usability Evaluation tool</h1>
+</div>
+
+<div class="evaluation-container">
+    <div class="input-section">
+        <label for="urlInput">Enter Cart or Checkout Page URL:</label>
+        <div class="url-input-wrapper">
+            <input type="url" id="urlInput" class="url-input" placeholder="https://example.com/checkout">
+            <button id="evaluateBtn" class="btn-primary btn-evaluate">Evaluate Checkout</button>
+        </div>
+    </div>
+
+    <div class="progress-section" id="progressSection">
+        <span class="progress-label">Progress:</span>
+        <div class="progress-track">
+            <div class="progress-fill" id="progressFill">0%</div>
+        </div>
+    </div>
+
+    <div class="results-section" id="resultsSection">
+        <div class="score-container">
+            <span class="score-label">Usability Score:</span>
+            <div class="score-box" id="scoreBox">--/23</div>
+        </div>
+
+        <div class="rules-breakdown" style="margin-top: 2rem;">
+            <h3>Detailed Rule Analysis</h3>
+            <div id="rulesList" style="display: grid; gap: 10px; color: black;"></div>
+        </div>
+
+        <br><br><br>
+        <div class="details-grid">
+            <div class="column">
+                <h3>Current Issues:</h3>
+                <div id="issuesList"></div>
+            </div>
+            <div class="column">
+                <h3>Suggestions</h3>
+                <div id="suggestionsList"></div>
+            </div>
+        </div>
+
+        <!-- ✅ NEW BUTTON ADDED HERE -->
+        <div style="text-align: center; margin-top: 3rem; padding: 1rem;">
+            <button id="moreResultsBtn" class="btn-secondary" style="
+                background: #6c757d;
+                color: white;
+                border: none;
+                padding: 12px 24px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 16px;
+                font-weight: 500;
+                transition: background 0.3s ease;
+            " onmouseover="this.style.background='#5a6268'" onmouseout="this.style.background='#6c757d'">
+                🔍 For More Results, Evaluate Home Page too, set settings for home page assesment
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const evaluateBtn = document.getElementById('evaluateBtn');
+        const urlInput = document.getElementById('urlInput');
+        const progressSection = document.getElementById('progressSection');
+        const progressFill = document.getElementById('progressFill');
+        const resultsSection = document.getElementById('resultsSection');
+        const scoreBox = document.getElementById('scoreBox');
+        const issuesList = document.getElementById('issuesList');
+        const suggestionsList = document.getElementById('suggestionsList');
+        const moreResultsBtn = document.getElementById('moreResultsBtn');
+
+        // ✅ Button click handler - redirect to home page
+        if (moreResultsBtn) {
+            moreResultsBtn.addEventListener('click', () => {
+                window.location.href = '/';
+            });
+        }
+
+        evaluateBtn.addEventListener('click', () => {
+            const url = urlInput.value.trim();
+            if (!url) {
+                alert('Please enter a URL to evaluate.');
+                return;
+            }
+
+            // Reset UI
+            resultsSection.style.display = 'none';
+            resultsSection.style.opacity = '0';
+            issuesList.innerHTML = '';
+            suggestionsList.innerHTML = '';
+            document.getElementById('rulesList').innerHTML = '';
+            scoreBox.innerText = '--/23';
+
+            // Show progress UI
+            progressSection.style.display = 'flex';
+            progressFill.style.width = '0%';
+            progressFill.innerText = '0%';
+
+            // ✅ REALISTIC PROGRESS BAR WITH TIME DELAYS
+            let progress = 0;
+            const startTime = Date.now();
+            const totalTime = 8000; // 8 seconds total for realistic feel
+            
+            const progressInterval = setInterval(() => {
+                // Calculate progress based on time elapsed (more realistic)
+                const elapsed = Date.now() - startTime;
+                let targetProgress = Math.min(95, (elapsed / totalTime) * 100);
+                
+                // Add some random variation to look real
+                if (progress < targetProgress) {
+                    progress += Math.random() * 3 + 1;
+                    if (progress > targetProgress) progress = targetProgress;
+                    progress = Math.min(95, progress);
+                    progressFill.style.width = `${progress}%`;
+                    progressFill.innerText = `${Math.floor(progress)}%`;
+                }
+                
+                // Add realistic status messages
+                if (progress > 20 && progress < 25 && !window.statusMsgShown1) {
+                    window.statusMsgShown1 = true;
+                    progressFill.innerText = `🔄 Loading page... ${Math.floor(progress)}%`;
+                    setTimeout(() => {
+                        if (progressFill) progressFill.innerText = `${Math.floor(progress)}%`;
+                    }, 800);
+                }
+                if (progress > 45 && progress < 50 && !window.statusMsgShown2) {
+                    window.statusMsgShown2 = true;
+                    progressFill.innerText = `🔍 Analyzing checkout... ${Math.floor(progress)}%`;
+                    setTimeout(() => {
+                        if (progressFill) progressFill.innerText = `${Math.floor(progress)}%`;
+                    }, 800);
+                }
+                if (progress > 70 && progress < 75 && !window.statusMsgShown3) {
+                    window.statusMsgShown3 = true;
+                    progressFill.innerText = `📊 Evaluating rules... ${Math.floor(progress)}%`;
+                    setTimeout(() => {
+                        if (progressFill) progressFill.innerText = `${Math.floor(progress)}%`;
+                    }, 800);
+                }
+                
+                if (elapsed >= totalTime) {
+                    clearInterval(progressInterval);
+                    progressFill.style.width = '100%';
+                    progressFill.innerText = `✅ Complete! 100%`;
+                    
+                    setTimeout(() => {
+                        // Call the actual evaluation
+                        performEvaluation(url, progressInterval);
+                    }, 500);
+                }
+            }, 100);
+            
+            // Store interval ID and URL for the evaluation function
+            window.currentProgressInterval = progressInterval;
+            window.currentUrl = url;
+        });
+
+        function performEvaluation(url, progressInterval) {
+            fetch('/evaluate/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ url: url })
+            })
+            .then(response => response.json())
+            .then(data => {
+                clearInterval(progressInterval);
+                progressFill.style.width = '100%';
+                progressFill.innerText = '100%';
+                
+                setTimeout(() => {
+                    showResults(data);
+                }, 500);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                clearInterval(progressInterval);
+                progressSection.style.display = 'none';
+                alert('An error occurred during evaluation. Please try again.');
+            });
+        }
+
+        function showResults(data) {
+            progressSection.style.display = 'none';
+            resultsSection.style.display = 'block';
+
+            // Counter animation for score
+            let currentScore = 0;
+            const targetScore = data.score;
+            const scoreInterval = setInterval(() => {
+                if (currentScore < targetScore) {
+                    currentScore++;
+                    scoreBox.innerText = `${currentScore}/23`;
+                } else {
+                    clearInterval(scoreInterval);
+                    scoreBox.innerText = `${targetScore}/23`;
+                }
+            }, 50);
+
+            // Populate issues
+            if (data.issues.length === 0) {
+                issuesList.innerHTML = '<div class="list-item">No major issues found! 🎉</div>';
+                suggestionsList.innerHTML = '<div class="list-item">Your checkout flow looks great!</div>';
+            } else {
+                data.issues.forEach((issue, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'list-item issue';
+                    div.innerText = issue;
+                    div.style.animationDelay = `${index * 0.1}s`;
+                    issuesList.appendChild(div);
+                });
+
+                data.suggestions.forEach((suggestion, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'list-item suggestion';
+                    div.innerText = suggestion;
+                    div.style.animationDelay = `${index * 0.1}s`;
+                    suggestionsList.appendChild(div);
+                });
+            }
+
+            const rulesList = document.getElementById('rulesList');
+            const ruleNames = {
+                1: "Mark each checkout step clearly",
+                2: "Use clear, unambiguous language on buttons and links",
+                3: "Keep action buttons visible on screen at all times",
+                4: "Explain why personal information is required",
+                5: "Display all additional costs before the payment page",
+                6: "Display security indicators on payment pages",
+                7: "Make return and refund policies accessible",
+                8: "Show expected delivery time clearly before payment",
+                9: "Streamline the checkout to the minimum number of steps",
+                10: "Simplify form fields and show a step progress indicator",
+                11: "Keep checkout form fields to the necessary minimum",
+                12: "Provide specific, inline error messages with clear recovery guidance",
+                13: "Allow guest checkout without mandatory account creation",
+                14: "Allow users to edit cart contents and order details during checkout",
+                15: "Display a clear order summary before the final payment step",
+                16: "Ensure fast page load and optimise for mobile devices",
+                17: "Offer multiple secure payment options",
+                18: "Offer both 'Buy Now' and 'Add to Cart' options",
+                19: "Display product ratings and customer reviews",
+                20: "Use prominent, clearly-labelled call-to-action (CTA) buttons",
+                21: "Avoid information overload and clutter on checkout pages",
+                22: "Maintain consistent branding, typography, and design throughout",
+                23: "Ensure all product, pricing, and review information is clear"
+            };
+
+            if (data.detailed_results) {
+                for (let ruleNum = 1; ruleNum <= 23; ruleNum++) {
+                    const key = `rule_${ruleNum}`;
+                    const passed = data.detailed_results[key];
+
+                    // SIRF PASSED RULES SHOW KARO
+                    if (passed) {
+                        const div = document.createElement('div');
+                        div.className = `rule-item passed`;
+                        div.style.padding = '10px';
+                        div.style.background = '#e8f5e9';
+                        div.style.borderRadius = '8px';
+                        div.style.display = 'flex';
+                        div.style.alignItems = 'center';
+                        div.style.gap = '10px';
+                        div.style.animation = 'fadeInUp 0.3s ease forwards';
+                        div.innerHTML = `
+                            <strong style="color: #2e7d32; width: 70px;">Rule ${ruleNum}</strong>
+                            <span style="color: #2e7d32; font-weight: bold; width: 20px;">✓</span>
+                            <span>${ruleNames[ruleNum]}</span>
+                        `;
+                        rulesList.appendChild(div);
+                    }
+                }
+
+                // Agar koi rule pass nahi hua to message show karo
+                if (rulesList.children.length === 0) {
+                    rulesList.innerHTML = '<div style="padding: 20px; text-align: center; background: #fff3e0; border-radius: 8px;">No rules passed! 😢</div>';
+                } else {
+                    // Add summary header
+                    const summaryHeader = document.createElement('div');
+                    summaryHeader.style.padding = '10px 15px';
+                    summaryHeader.style.color = 'white';
+                    summaryHeader.style.borderRadius = '8px';
+                    summaryHeader.style.marginBottom = '15px';
+                    summaryHeader.style.fontWeight = 'bold';
+                    rulesList.insertBefore(summaryHeader, rulesList.firstChild);
+                }
+            }
+
+            // Fade in
+            setTimeout(() => {
+                resultsSection.style.opacity = '1';
+            }, 50);
+        }
+
+        // Function to get CSRF cookie
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    });
+</script>
+
+<style>
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .rule-item {
+        animation: fadeInUp 0.3s ease forwards;
+    }
+    
+    .btn-secondary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        transition: all 0.3s ease;
+    }
+    
+    .btn-secondary {
+        transition: all 0.3s ease;
+    }
+</style>
+{% endblock %}
